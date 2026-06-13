@@ -1,8 +1,15 @@
+import os
 import time
 
+import requests
 import win32gui
 import win32process
 import wmi
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GH_TOKEN = os.getenv("GITHUB_TOKEN")
 
 last_title = ""
 
@@ -63,7 +70,7 @@ def classify_activity(activity_window_and_title):
             }
 
         if window_name in ["msedge", "chrome", "firefox"]:
-            return {"type": "browsing", "title": title}
+            return {"type": "Browsing", "title": title}
 
     except Exception as e:
         print(f"error {e}")
@@ -82,7 +89,29 @@ while True:
 
         print(f"Current Activity: {activity_window_and_title}")
 
-        print(classify_activity(activity_window_and_title))
+        classified_activity = classify_activity(activity_window_and_title)
         last_title = title
 
+        if classified_activity is None:
+            continue
+
+        query = f'''
+		mutation {{
+		  	changeUserStatus(input: {{
+			message: "{f"Coding {classified_activity["workspace"]}" if classified_activity["type"] == "Coding" else classified_activity["type"]}"
+		  }}) {{
+			status {{
+				message
+			}}
+		  }}
+		}}
+		'''
+
+        response = requests.post(
+            "https://api.github.com/graphql",
+            json={"query": query},
+            headers={"Authorization": f"Bearer {GH_TOKEN}"},
+        )
+
+        print(response.json())
     time.sleep(1)
