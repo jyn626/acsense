@@ -61,7 +61,7 @@ def classify_activity(activity_window_and_title):
 
     try:
         if window_name == "Zed" or window_name == "Visual Studio Code":
-            # TODO: find out later on what if the workspace have a "-" in their name
+            # TODO: fix cases where the workspace name have "—"
             workspace = title.split("—")[0].strip()
             active_file = title.split("—")[1].strip()
 
@@ -69,14 +69,43 @@ def classify_activity(activity_window_and_title):
                 "type": "Coding",
                 "workspace": workspace,
                 "active_file": active_file,
+                "emoji": "computer",
             }
 
         if window_name in ["msedge", "chrome", "firefox"]:
-            return {"type": "Browsing", "title": title}
+            video_title = ""
+            if "youtube" in title.lower():
+                video_title = title.split("-")[0].strip()
+                print(video_title)
+                return {"type": "Youtube", "title": video_title, "emoji": "red_circle"}
+            return {"type": "Browsing", "title": title, "emoji": "globe_with_meridians"}
 
     except Exception as e:
         print(f"error {e}")
         return None
+
+
+def update_github_status(classified_activity):
+    query = f"""
+	mutation {{
+	  changeUserStatus(input: {{
+		emoji: ":{classified_activity["emoji"]}:",
+		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"]}" if classified_activity["type"] == "Youtube" else classified_activity["type"])}"
+	  }}) {{
+		status {{
+		  message
+		}}
+	  }}
+	}}
+	"""
+
+    headers = {"Authorization": f"Bearer {GH_TOKEN}"}
+
+    response = requests.post(
+        "https://api.github.com/graphql",
+        json={"query": query},
+        headers=headers,
+    )
 
 
 while True:
@@ -97,23 +126,6 @@ while True:
         if classified_activity is None:
             continue
 
-        query = f'''
-		mutation {{
-			changeUserStatus(input: {{
-			message: "{f"Coding {classified_activity["workspace"]}" if classified_activity["type"] == "Coding" else classified_activity["type"]}"
-		  }}) {{
-			status {{
-				message
-			}}
-		  }}
-		}}
-		'''
+        update_github_status(classified_activity)
 
-        response = requests.post(
-            "https://api.github.com/graphql",
-            json={"query": query},
-            headers={"Authorization": f"Bearer {GH_TOKEN}"},
-        )
-
-        print(response.json())
     time.sleep(1)
