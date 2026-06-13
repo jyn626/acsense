@@ -25,15 +25,16 @@ def get_app_path(hwnd):
         ):
             exe = p.ExecutablePath
             break
+        return exe
+
     except:
         return None
-    else:
-        return exe
 
 
 def get_app_name(hwnd):
     """Get applicatin filename given hwnd."""
     try:
+        exe, name_without_ext = "", ""
         _, pid = win32process.GetWindowThreadProcessId(hwnd)
         for p in c.query(
             "SELECT Name FROM Win32_Process WHERE ProcessId = %s" % str(pid)
@@ -42,10 +43,11 @@ def get_app_name(hwnd):
             name_without_ext = exe.split(".")[:-1]
             name_without_ext = " ".join(name_without_ext)
             break
+
+        return exe, name_without_ext
+
     except:
         return None
-    else:
-        return exe, name_without_ext
 
 
 def classify_activity(activity_window_and_title):
@@ -97,7 +99,7 @@ while True:
 
         query = f'''
 		mutation {{
-		  	changeUserStatus(input: {{
+			changeUserStatus(input: {{
 			message: "{f"Coding {classified_activity["workspace"]}" if classified_activity["type"] == "Coding" else classified_activity["type"]}"
 		  }}) {{
 			status {{
