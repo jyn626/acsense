@@ -27,6 +27,12 @@ GITHUB_TOKEN=...
 .\run.bat
 
 ````
+load the browser extension,
+go to `chrome://extensions` on your browser
+1. Enable `developer mode`
+2. Select `load unpacked`
+3. And finally, select the `extension` folder. 
+
 ## License
 
 This project is licensed under the [MIT licence](LICENSE)
