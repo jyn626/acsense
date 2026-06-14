@@ -10,3 +10,6 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 -  Prioritizes coding activity to be displayed in the github status, next to it is the youtube activity.
 -  Detecs if there are no IDE opened by checking list of processes, if there are none then display Youtube activity.
 
+## License
+
+This project is licensed under the [MIT licence](LICENSE)
