@@ -1,6 +1,6 @@
 function sendTitleToAcsense() {
     try {
-        fetch("http://localhost:5000/activity", {
+        fetch("http://127.0.0.1:5000/youtube-activity", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -17,10 +17,11 @@ function sendTitleToAcsense() {
 
 let lastTitle = "";
 
+// check every seconds if the title has change, only then we'll send a request
 setInterval(() => {
     if (document.title != lastTitle) {
         lastTitle = document.title;
 
-        getTabTitle();
+        sendTitleToAcsense();
     }
-}, 2000);
+}, 1000);

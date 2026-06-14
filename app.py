@@ -1,19 +1,27 @@
+import json
 import os
+import threading
 import time
 
+import psutil
 import requests
 import win32gui
 import win32process
 import wmi
 from dotenv import load_dotenv
+from flask import Flask, request
+from flask.json import jsonify
+from flask_cors import CORS
 
 load_dotenv()
 
 GH_TOKEN = os.getenv("GITHUB_TOKEN")
 
-last_title = ""
 
 c = wmi.WMI()
+
+app = Flask(__name__)
+CORS(app)
 
 
 def get_app_path(hwnd):
@@ -34,19 +42,18 @@ def get_app_path(hwnd):
 def get_app_name(hwnd):
     """Get applicatin filename given hwnd."""
     try:
-        exe, name_without_ext = "", ""
         _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        for p in c.query(
-            "SELECT Name FROM Win32_Process WHERE ProcessId = %s" % str(pid)
-        ):
-            exe = p.Name
-            name_without_ext = exe.split(".")[:-1]
-            name_without_ext = " ".join(name_without_ext)
-            break
+
+        process = psutil.Process(pid)
+        exe = process.name()
+
+        name_without_ext = exe.split(".")[:-1]
+        name_without_ext = " ".join(name_without_ext)
 
         return exe, name_without_ext
 
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 
@@ -73,11 +80,11 @@ def classify_activity(activity_window_and_title):
             }
 
         if window_name in ["msedge", "chrome", "firefox"]:
-            video_title = ""
-            if "youtube" in title.lower():
-                video_title = title.split("-")[0].strip()
-                print(video_title)
-                return {"type": "Youtube", "title": video_title, "emoji": "red_circle"}
+            # video_title = ""
+            # if "youtube" in title.lower():
+            #     video_title = title.split("-")[0].strip()
+            #     print(video_title)
+            #     return {"type": "Youtube", "title": video_title, "emoji": "red_circle"}
             return {"type": "Browsing", "title": title, "emoji": "globe_with_meridians"}
 
     except Exception as e:
@@ -108,24 +115,58 @@ def update_github_status(classified_activity):
     )
 
 
-while True:
-    window = win32gui.GetForegroundWindow()
-    title = win32gui.GetWindowText(window)
+@app.route("/youtube-activity", methods=["POST"])
+def activity():
+    try:
+        if request.is_json:
+            data = request.get_json()
 
-    if title != last_title:
-        print("\n")
-        _, active_window_name = get_app_name(window)
+            title = data.get("title")
+            # url = data.get("url")
+            print(title)
+            return jsonify({"success": True, "title": title})
+        print("im here")
+        return jsonify({"success": False})
 
-        activity_window_and_title = f"{active_window_name}: {title}"
+    except Exception as e:
+        print(e)
 
-        print(f"Current Activity: {activity_window_and_title}")
 
-        classified_activity = classify_activity(activity_window_and_title)
-        last_title = title
+last_title = ""
 
-        if classified_activity is None:
-            continue
 
-        update_github_status(classified_activity)
+def worker():
+    while True:
+        global last_title
+        print("thread")
+        window = win32gui.GetForegroundWindow()
+        title = win32gui.GetWindowText(window)
 
-    time.sleep(1)
+        if title != last_title:
+            last_title = title
+            # print("\n")
+            # print(title)
+            # print("app name")
+            # print(get_app_name(window))
+            if get_app_name(window) is None:
+                continue
+
+            _, active_window_name = get_app_name(window)
+
+            activity_window_and_title = f"{active_window_name}: {title}"
+
+            print(f"Current Activity: {activity_window_and_title}")
+
+            classified_activity = classify_activity(activity_window_and_title)
+            last_title = title
+
+            if classified_activity is None:
+                continue
+
+            update_github_status(classified_activity)
+
+        time.sleep(1)
+
+
+thread = threading.Thread(target=worker)
+thread.start()
