@@ -180,7 +180,6 @@ def activity():
 def worker():
     while True:
         global last_title, youtube_video, last_youtube_video
-        print("thread")
         window = win32gui.GetForegroundWindow()
         title = win32gui.GetWindowText(window)
         print(title)
@@ -190,9 +189,7 @@ def worker():
 			2. Youtube
 			3. Browsing
 
-		problem to solve rn:
-			update youtube status IF zed or vscode is not opened.
-			so first we need to get the app name
+		this updates to youtube status only IF Zed or VsCode is not running in the process.
 		"""
 
         exe, app_name = get_app_name(window)
@@ -213,6 +210,7 @@ def worker():
             if activities["coding"]:
                 found = False
                 processes = psutil.process_iter()
+
                 for p in processes:
                     # print(
                     #     f"comparing {activities['coding']['process_name']} to {p.name()}"
@@ -223,8 +221,10 @@ def worker():
                         break
                 if not found:
                     activities["coding"] = None
+
                 else:
                     update_github_status(activities["coding"])
+
             elif activities["youtube"]:
                 update_github_status(activities["youtube"])
             elif activities["browsing"]:
