@@ -15,6 +15,12 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 # clone the repository
 git clone https://github.com/jyn626/acsense.git
 
+# create an environment
+python -m venv .venv
+
+# install dependencies
+pip install -r requirements.txt
+
 # go the directory, and create an .env file
 touch .env
 
