@@ -37,7 +37,6 @@ go to `chrome://extensions` on your browser
 -  psutil
 -  requests
 -  pywin32
--  WMI
 -  python-dotenv
 -  Flask
 -  flask-cors
