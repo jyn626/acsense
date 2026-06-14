@@ -123,7 +123,7 @@ def update_github_status(classified_activity):
 	mutation {{
 	  changeUserStatus(input: {{
 		emoji: ":{classified_activity["emoji"]}:",
-		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"]}" if classified_activity["type"] == "Youtube" else classified_activity["title"])}"
+		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"].removesuffix(" - YouTube")}" if classified_activity["type"] == "Youtube" else (classified_activity["title"] if classified_activity["type"] == "others" else classified_activity["type"]))}"
 	  }}) {{
 		status {{
 		  message
@@ -217,7 +217,6 @@ def worker():
                     # )
                     if p.name() == activities["coding"]["process_name"]:
                         found = True
-                        print("Zed opened")
                         break
                 if not found:
                     activities["coding"] = None
