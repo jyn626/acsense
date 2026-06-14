@@ -10,6 +10,23 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 -  Prioritizes coding activity to be displayed in the github status, next to it is the youtube activity.
 -  Detecs if there are no IDE opened by checking list of processes, if there are none then display Youtube activity.
 
+## Usage
+````
+# clone the repository
+git clone https://github.com/jyn626/acsense.git
+
+# go the directory, and create an .env file
+touch .env
+
+# get your Github Personal Access Token (PAT),
+# open the .env file and assign your PAT with this variable name.
+# note: dont enclose the PAT with qoutations ("")  
+GITHUB_TOKEN=...
+
+# double click on the `run.bat` file, or alternatively you can run it in the terminal with
+.\run.bat
+
+````
 ## License
 
 This project is licensed under the [MIT licence](LICENSE)
