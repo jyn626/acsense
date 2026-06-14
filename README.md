@@ -1,4 +1,5 @@
 # acsense
+detects your current activity (coding, browsing, youtube.) and keeps your github status in sync automatically.
 
 ## Features as of now
 -  Detects opened IDE: `Visual Studio Code` and `Zed`.
