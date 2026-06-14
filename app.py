@@ -57,11 +57,25 @@ def get_app_name(hwnd):
         return None
 
 
-def classify_activity(activity_window_and_title):
+def classify_activity(activity_window_and_title, is_yt):
     """
-    Sample activity_window_and_title content: Zed: acsense — app.py
-    split = ["Zed", "acsense - app.py"]
+    activity_window_and_title sample value:
+    if not yt:
+        Zed: acsense — app.py
+    if yt:
+        Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
     """
+
+    if is_yt:
+        print(activity_window_and_title)
+        print("heree!!")
+        return {
+            "type": "Youtube",
+            "title": activity_window_and_title,
+            "emoji": "red_circle",
+        }
+
+    # split = ["Zed", "acsense - app.py"]
     split = activity_window_and_title.split(":")
     window_name = split[0]
     title = split[1].strip()
@@ -79,12 +93,7 @@ def classify_activity(activity_window_and_title):
                 "emoji": "computer",
             }
 
-        if window_name in ["msedge", "chrome", "firefox"]:
-            # video_title = ""
-            # if "youtube" in title.lower():
-            #     video_title = title.split("-")[0].strip()
-            #     print(video_title)
-            #     return {"type": "Youtube", "title": video_title, "emoji": "red_circle"}
+        elif window_name in ["msedge", "chrome", "firefox"]:
             return {"type": "Browsing", "title": title, "emoji": "globe_with_meridians"}
 
     except Exception as e:
@@ -93,6 +102,22 @@ def classify_activity(activity_window_and_title):
 
 
 def update_github_status(classified_activity):
+    """
+    expects
+    if zed | vscode {
+        "type": "Coding",
+        "workspace": ...,
+        "active_file": ...,
+        "emoji": "...",
+    }
+
+    if youtube {
+        "type": "Youtube",
+        "title": ...,
+        "emoji": "...",
+    }
+    """
+
     query = f"""
 	mutation {{
 	  changeUserStatus(input: {{
@@ -115,39 +140,54 @@ def update_github_status(classified_activity):
     )
 
 
+last_title = ""
+youtube_video = ""
+last_youtube_video = ""
+
+
 @app.route("/youtube-activity", methods=["POST"])
 def activity():
+    """
+    sample output:
+        log:  127.0.0.1 - - [14/Jun/2026 08:48:14] "POST /youtube-activity HTTP/1.1" 200
+        title: Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
+
+    """
     try:
         if request.is_json:
+            global youtube_video
             data = request.get_json()
 
             title = data.get("title")
             # url = data.get("url")
-            print(title)
+            youtube_video = title.removesuffix(" - YouTube")
+            # update_github_status(title)
+
             return jsonify({"success": True, "title": title})
         print("im here")
+
         return jsonify({"success": False})
 
     except Exception as e:
         print(e)
 
 
-last_title = ""
-
-
 def worker():
     while True:
-        global last_title
+        global last_title, youtube_video, last_youtube_video
         print("thread")
         window = win32gui.GetForegroundWindow()
         title = win32gui.GetWindowText(window)
 
-        if title != last_title:
+        if youtube_video:
+            if youtube_video != last_youtube_video:
+                last_youtube_video = youtube_video
+                classified_activity = classify_activity(youtube_video, True)
+                update_github_status(classified_activity)
+
+        if not youtube_video and title != last_title:
             last_title = title
-            # print("\n")
-            # print(title)
-            # print("app name")
-            # print(get_app_name(window))
+
             if get_app_name(window) is None:
                 continue
 
@@ -157,8 +197,7 @@ def worker():
 
             print(f"Current Activity: {activity_window_and_title}")
 
-            classified_activity = classify_activity(activity_window_and_title)
-            last_title = title
+            classified_activity = classify_activity(activity_window_and_title, False)
 
             if classified_activity is None:
                 continue
