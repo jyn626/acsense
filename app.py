@@ -6,7 +6,6 @@ import psutil
 import requests
 import win32gui
 import win32process
-import wmi
 from dotenv import load_dotenv
 from flask import Flask, request
 from flask.json import jsonify
@@ -17,7 +16,7 @@ load_dotenv()
 GH_TOKEN = os.getenv("GITHUB_TOKEN")
 
 
-c = wmi.WMI()
+# c = wmi.WMI()
 
 app = Flask(__name__)
 CORS(app)
@@ -25,19 +24,19 @@ CORS(app)
 activities = {"coding": None, "youtube": None, "browsing": None, "others": None}
 
 
-def get_app_path(hwnd):
-    """Get applicatin path given hwnd."""
-    try:
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        for p in c.query(
-            "SELECT ExecutablePath FROM Win32_Process WHERE ProcessId = %s" % str(pid)
-        ):
-            exe = p.ExecutablePath
-            break
-        return exe
+# def get_app_path(hwnd):
+#     """Get applicatin path given hwnd."""
+#     try:
+#         _, pid = win32process.GetWindowThreadProcessId(hwnd)
+#         for p in c.query(
+#             "SELECT ExecutablePath FROM Win32_Process WHERE ProcessId = %s" % str(pid)
+#         ):
+#             exe = p.ExecutablePath
+#             break
+#         return exe
 
-    except:
-        return None
+#     except:
+#         return None
 
 
 def get_app_name(hwnd):
