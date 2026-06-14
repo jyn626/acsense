@@ -23,6 +23,8 @@ c = wmi.WMI()
 app = Flask(__name__)
 CORS(app)
 
+activities = {"coding": None, "youtube": None, "browsing": None, "others": None}
+
 
 def get_app_path(hwnd):
     """Get applicatin path given hwnd."""
@@ -57,36 +59,29 @@ def get_app_name(hwnd):
         return None
 
 
-def classify_activity(activity_window_and_title, is_yt):
+def classify_activity(activity_window_and_title, other_apps=False):
     """
     activity_window_and_title sample value:
     if not yt:
-        Zed: acsense — app.py
+            Zed: acsense — app.py
     if yt:
-        Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
+            Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
     """
-
-    if is_yt:
-        print(activity_window_and_title)
-        print("heree!!")
-        return {
-            "type": "Youtube",
-            "title": activity_window_and_title,
-            "emoji": "red_circle",
-        }
-
-    # split = ["Zed", "acsense - app.py"]
+    title = activity_window_and_title
     split = activity_window_and_title.split(":")
     window_name = split[0]
-    title = split[1].strip()
+
+    # if not other_apps:
+    #     title = split[1].strip()
 
     try:
         if window_name == "Zed" or window_name == "Visual Studio Code":
+            global activities
             # TODO: fix cases where the workspace name have "—"
             workspace = title.split("—")[0].strip()
             active_file = title.split("—")[1].strip()
 
-            return {
+            activities["coding"] = {
                 "type": "Coding",
                 "workspace": workspace,
                 "active_file": active_file,
@@ -94,7 +89,14 @@ def classify_activity(activity_window_and_title, is_yt):
             }
 
         elif window_name in ["msedge", "chrome", "firefox"]:
-            return {"type": "Browsing", "title": title, "emoji": "globe_with_meridians"}
+            activities["browsing"] = {
+                "type": "Browsing",
+                "title": title,
+                "emoji": "globe_with_meridians",
+            }
+
+        else:
+            activities["others"] = {"type": "Others", "title": title, "emoji": "sloth"}
 
     except Exception as e:
         print(f"error {e}")
@@ -105,16 +107,16 @@ def update_github_status(classified_activity):
     """
     expects
     if zed | vscode {
-        "type": "Coding",
-        "workspace": ...,
-        "active_file": ...,
-        "emoji": "...",
+            "type": "Coding",
+            "workspace": ...,
+            "active_file": ...,
+            "emoji": "...",
     }
 
     if youtube {
-        "type": "Youtube",
-        "title": ...,
-        "emoji": "...",
+            "type": "Youtube",
+            "title": ...,
+            "emoji": "...",
     }
     """
 
@@ -122,7 +124,7 @@ def update_github_status(classified_activity):
 	mutation {{
 	  changeUserStatus(input: {{
 		emoji: ":{classified_activity["emoji"]}:",
-		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"]}" if classified_activity["type"] == "Youtube" else classified_activity["type"])}"
+		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"]}" if classified_activity["type"] == "Youtube" else classified_activity["title"])}"
 	  }}) {{
 		status {{
 		  message
@@ -147,12 +149,13 @@ last_youtube_video = ""
 
 @app.route("/youtube-activity", methods=["POST"])
 def activity():
+    global activities
     """
-    sample output:
-        log:  127.0.0.1 - - [14/Jun/2026 08:48:14] "POST /youtube-activity HTTP/1.1" 200
-        title: Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
+	sample output:
+		log:  127.0.0.1 - - [14/Jun/2026 08:48:14] "POST /youtube-activity HTTP/1.1" 200
+		title: Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
 
-    """
+	"""
     try:
         if request.is_json:
             global youtube_video
@@ -162,9 +165,14 @@ def activity():
             # url = data.get("url")
             youtube_video = title.removesuffix(" - YouTube")
             # update_github_status(title)
+            #
+            activities["youtube"] = {
+                "type": "Youtube",
+                "title": youtube_video,
+                "emoji": "red_circle",
+            }
 
             return jsonify({"success": True, "title": title})
-        print("im here")
 
         return jsonify({"success": False})
 
@@ -178,31 +186,86 @@ def worker():
         print("thread")
         window = win32gui.GetForegroundWindow()
         title = win32gui.GetWindowText(window)
+        print(title)
+        """
+		priority:
+			1. Coding (Zed, Visual Studio Code)
+			2. Youtube
+			3. Browsing
 
-        if youtube_video:
-            if youtube_video != last_youtube_video:
-                last_youtube_video = youtube_video
-                classified_activity = classify_activity(youtube_video, True)
-                update_github_status(classified_activity)
+		problem to solve rn:
+			update youtube status IF zed or vscode is not opened.
+			so first we need to get the app name
+		"""
 
-        if not youtube_video and title != last_title:
+        exe, app_name = get_app_name(window)
+        # print(app_name)
+        if app_name is None:
+            break
+
+        if title != last_title:
             last_title = title
 
-            if get_app_name(window) is None:
-                continue
+            activity_window_and_title = f"{app_name}: {title}"
+            # def classify_activity(activity_window_and_title, other_apps=False):
+            # classify_activity(activity_window_and_title, False)
+            print(activities)
+            print(app_name)
+            classify_activity(activity_window_and_title)
 
-            _, active_window_name = get_app_name(window)
+            if "zed" in app_name.lower():
+                activities["coding"]["process_name"] = exe
+            # elif youtube_video:
+            # if youtube_video != last_youtube_video:
+            # last_youtube_video = youtube_video
+            # ...
+            if activities["coding"]:
+                found = False
+                processes = psutil.process_iter()
+                for p in processes:
+                    # print(
+                    #     f"comparing {activities['coding']['process_name']} to {p.name()}"
+                    # )
+                    if p.name() == activities["coding"]["process_name"]:
+                        found = True
+                        print("Zed opened")
+                        break
+                if not found:
+                    activities["coding"] = None
+                else:
+                    update_github_status(activities["coding"])
+            elif activities["youtube"]:
+                update_github_status(activities["youtube"])
+            elif activities["browsing"]:
+                update_github_status(activities["browsing"])
+            else:
+                update_github_status(activities["others"])
+            # ...
+            # if "zed" in app_name.lower():
+            #     classified_activity = classify_activity(
+            #         activity_window_and_title, False
+            #     )
 
-            activity_window_and_title = f"{active_window_name}: {title}"
+            #     print(classified_activity)
+            #     update_github_status(classified_activity)
+            # elif youtube_video:
+            #     if youtube_video != last_youtube_video:
+            #         last_youtube_video = youtube_video
 
-            print(f"Current Activity: {activity_window_and_title}")
+            #         classified_activity = classify_activity(youtube_video, True)
+            #         print(classified_activity)
 
-            classified_activity = classify_activity(activity_window_and_title, False)
+            #         update_github_status(classified_activity)
+            # else:
+            #     _, active_window_name = get_app_name(window)
 
-            if classified_activity is None:
-                continue
+            #     print(f"Current Activity: {activity_window_and_title}")
 
-            update_github_status(classified_activity)
+            #     classified_activity = classify_activity(app_name, False, True)
+
+            #     print(classified_activity)
+
+            #     update_github_status(classified_activity)
 
         time.sleep(1)
 
