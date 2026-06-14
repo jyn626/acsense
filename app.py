@@ -1,4 +1,3 @@
-import json
 import os
 import threading
 import time
@@ -162,10 +161,8 @@ def activity():
             data = request.get_json()
 
             title = data.get("title")
-            # url = data.get("url")
             youtube_video = title.removesuffix(" - YouTube")
-            # update_github_status(title)
-            #
+
             activities["youtube"] = {
                 "type": "Youtube",
                 "title": youtube_video,
@@ -199,7 +196,7 @@ def worker():
 		"""
 
         exe, app_name = get_app_name(window)
-        # print(app_name)
+
         if app_name is None:
             break
 
@@ -207,17 +204,11 @@ def worker():
             last_title = title
 
             activity_window_and_title = f"{app_name}: {title}"
-            # def classify_activity(activity_window_and_title, other_apps=False):
-            # classify_activity(activity_window_and_title, False)
-            print(activities)
-            print(app_name)
             classify_activity(activity_window_and_title)
 
             if "zed" in app_name.lower():
                 activities["coding"]["process_name"] = exe
-            # elif youtube_video:
-            # if youtube_video != last_youtube_video:
-            # last_youtube_video = youtube_video
+
             # ...
             if activities["coding"]:
                 found = False
@@ -241,31 +232,6 @@ def worker():
             else:
                 update_github_status(activities["others"])
             # ...
-            # if "zed" in app_name.lower():
-            #     classified_activity = classify_activity(
-            #         activity_window_and_title, False
-            #     )
-
-            #     print(classified_activity)
-            #     update_github_status(classified_activity)
-            # elif youtube_video:
-            #     if youtube_video != last_youtube_video:
-            #         last_youtube_video = youtube_video
-
-            #         classified_activity = classify_activity(youtube_video, True)
-            #         print(classified_activity)
-
-            #         update_github_status(classified_activity)
-            # else:
-            #     _, active_window_name = get_app_name(window)
-
-            #     print(f"Current Activity: {activity_window_and_title}")
-
-            #     classified_activity = classify_activity(app_name, False, True)
-
-            #     print(classified_activity)
-
-            #     update_github_status(classified_activity)
 
         time.sleep(1)
 
