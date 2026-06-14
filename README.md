@@ -33,6 +33,15 @@ go to `chrome://extensions` on your browser
 2. Select `load unpacked`
 3. And finally, select the `extension` folder. 
 
+## Dependencies
+-  psutil
+-  requests
+-  pywin32
+-  WMI
+-  python-dotenv
+-  Flask
+-  flask-cors
+
 ## License
 
 This project is licensed under the [MIT licence](LICENSE)
