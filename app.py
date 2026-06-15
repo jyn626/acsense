@@ -15,14 +15,12 @@ load_dotenv()
 
 GH_TOKEN = os.getenv("GITHUB_TOKEN")
 
-
 # c = wmi.WMI()
 
 app = Flask(__name__)
 CORS(app)
 
-activities = {"coding": None, "youtube": None, "browsing": None, "others": None}
-
+activities = {"coding": {}, "youtube": {}, "browsing": {}, "others": {}}
 
 # def get_app_path(hwnd):
 #     """Get applicatin path given hwnd."""
@@ -57,44 +55,51 @@ def get_app_name(hwnd):
         return None
 
 
-def classify_activity(activity_window_and_title, other_apps=False):
+def classify_activity(app_name, title):
     """
     activity_window_and_title sample value:
     if not yt:
+        Zed gives this kind of title
             Zed: acsense — app.py
+        But VsCode just gives
+            Visual Studio Code
+
     if yt:
             Green Day - American Idiot [Official Music Video] [4K Upgrade] - YouTube
     """
-    title = activity_window_and_title
-    split = activity_window_and_title.split(":")
-    window_name = split[0]
+    # title = activity_window_and_title
+    # split = activity_window_and_title.split(":")
+    # window_name = split[0]
 
     # if not other_apps:
     #     title = split[1].strip()
 
     try:
-        if window_name == "Zed" or window_name == "Visual Studio Code":
+        print("app_nameapp_nameapp_nameapp_name", app_name)
+        if app_name == "Zed" or app_name == "Code":
             global activities
-            # TODO: fix cases where the workspace name have "—"
-            workspace = title.split("—")[0].strip()
-            active_file = title.split("—")[1].strip()
+            # workspace = title.split("—")[0].strip() if title.split("—")[0].strip()  else ""
+            # active_file = title.split("—")[1].strip() if title.split("—")[1].strip() else ""
 
-            activities["coding"] = {
-                "type": "Coding",
-                "workspace": workspace,
-                "active_file": active_file,
-                "emoji": "computer",
-            }
+            activities["coding"]["type"] = "coding"
+            activities["coding"]["description"] = f"Coding on {title}"
+            # activities["coding"]["workspace"] = title
+            # activities["coding"]["active_file"] = "Coding"
+            activities["coding"]["emoji"] = "computer"
 
-        elif window_name in ["msedge", "chrome", "firefox"]:
+        elif app_name in ["msedge", "chrome", "firefox"]:
             activities["browsing"] = {
-                "type": "Browsing",
-                "title": title,
+                "type": "browsing",
+                "description": f"Browsing on {app_name}",
                 "emoji": "globe_with_meridians",
             }
 
         else:
-            activities["others"] = {"type": "Others", "title": title, "emoji": "sloth"}
+            activities["others"] = {
+                "type": "Others",
+                "description": title,
+                "emoji": "sloth",
+            }
 
     except Exception as e:
         print(f"error {e}")
@@ -119,21 +124,21 @@ def update_github_status(classified_activity):
     """
 
     query = f"""
-	mutation {{
-	  changeUserStatus(input: {{
-		emoji: ":{classified_activity["emoji"]}:",
-		message: "{f"Coding {classified_activity["workspace"]} — {classified_activity["active_file"]}" if classified_activity["type"] == "Coding" else (f"YT - {classified_activity["title"].removesuffix(" - YouTube")}" if classified_activity["type"] == "Youtube" else (classified_activity["title"] if classified_activity["type"] == "others" else classified_activity["type"]))}"
-	  }}) {{
-		status {{
-		  message
-		}}
-	  }}
-	}}
-	"""
+    mutation {{
+    changeUserStatus(input: {{
+        emoji: ":{classified_activity["emoji"]}:",
+        message: "{classified_activity["description"] if classified_activity["type"] in ["coding", "Coding"] else (f"{classified_activity['description']}" if classified_activity["type"] == "Youtube" else (classified_activity["title"] if classified_activity["type"] == "others" else classified_activity["description"]))}"
+    }}) {{
+        status {{
+        message
+        }}
+    }}
+    }}
+    """
 
     headers = {"Authorization": f"Bearer {GH_TOKEN}"}
 
-    response = requests.post(
+    requests.post(
         "https://api.github.com/graphql",
         json={"query": query},
         headers=headers,
@@ -164,7 +169,7 @@ def activity():
 
             activities["youtube"] = {
                 "type": "Youtube",
-                "title": youtube_video,
+                "description": f"Watching {youtube_video}",
                 "emoji": "red_circle",
             }
 
@@ -207,13 +212,18 @@ def worker():
 
         exe, app_name = get_app_name(window)
 
+        print("app_name", app_name)
+        print("exe", exe)
+
         if title != last_title:
             last_title = title
 
-            activity_window_and_title = f"{app_name}: {title}"
-            classify_activity(activity_window_and_title)
+            # activity_window_and_title = f"{app_name}: {title}"
+            classify_activity(app_name, title)
+            print(exe)
 
-            if "zed" in app_name.lower():
+            # exe name for zed and vscode are: Zed.exe and Code.exe
+            if app_name == "Zed" or app_name == "Code":
                 activities["coding"]["process_name"] = exe
 
             print(activities)
