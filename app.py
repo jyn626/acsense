@@ -182,6 +182,17 @@ def worker():
         window = win32gui.GetForegroundWindow()
         title = win32gui.GetWindowText(window)
         print(title)
+
+        if (
+            title == "Task Switching"
+            or title == "Start Menu"
+            or title == "Windows Search"
+            or title == "Notification Center"
+            or title == ""
+        ):
+            print(f"Ignored window: {title}")
+            continue
+
         """
 		priority:
 			1. Coding (Zed, Visual Studio Code)
@@ -191,10 +202,10 @@ def worker():
 		this updates to youtube status only IF Zed or VsCode is not running in the process.
 		"""
 
-        exe, app_name = get_app_name(window)
-
-        if app_name is None:
+        if get_app_name(window) is None:
             break
+
+        exe, app_name = get_app_name(window)
 
         if title != last_title:
             last_title = title
@@ -205,6 +216,7 @@ def worker():
             if "zed" in app_name.lower():
                 activities["coding"]["process_name"] = exe
 
+            print(activities)
             # ...
             if activities["coding"]:
                 found = False
