@@ -11,33 +11,25 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 -  Detecs if there are no IDE opened by checking list of processes, if there are none then display the others respectively by priority.
 
 ## Usage
+<small>Powershell</small>
 ````
-# clone the repository
+# 1. Clone the repository and move into the correct directory
 git clone https://github.com/jyn626/acsense.git
+cd acsense
 
-# go in the directory
-cd ascence
-
-# create an environment
+# 2. Set up and activate the virtual environment
 python -m venv .venv
+& .\.venv\Scripts\Activate
 
-# activate the environment
-.venv\Scripts\activate
-
-# install dependencies
+# 3. Install required dependencies
 pip install -r requirements.txt
 
-# go the directory, and create an .env file
-touch .env
+# 4. Prompt for your GitHub token and automatically write it to the .env file
+$token = Read-Host "Paste your GitHub Personal Access Token (PAT) here (No quotes needed)"
+"GITHUB_TOKEN=$token" | Out-File -FilePath .env -Encoding utf8
 
-# get your Github Personal Access Token (PAT),
-# open the .env file and assign your PAT with this variable name.
-# note: dont enclose the PAT with qoutations ("")  
-GITHUB_TOKEN=...
-
-# double click on the `run.bat` file, or alternatively you can run it in the terminal with
+# 5. Launch the application, double click on the run.bat file or run:
 .\run.bat
-
 ````
 load the browser extension,
 go to `chrome://extensions` on your browser
