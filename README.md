@@ -7,25 +7,29 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 ## Features as of now
 -  Detects opened IDE: `Visual Studio Code` and `Zed`.
 -  Get exact title of the Youtube video the user is watching, via a browser extension.
--  Prioritizes coding activity to be displayed in the github status, next to it is the youtube activity.
--  Detecs if there are no IDE opened by checking list of processes, if there are none then display Youtube activity.
+-  Prioritizes coding activity to be displayed in the github status.
+-  Detecs if there are no IDE opened by checking list of processes, if there are none then display the others respectively by priority.
 
 ## Usage
+<small>Powershell</small>
 ````
-# clone the repository
+# 1. Clone the repository and move into the correct directory
 git clone https://github.com/jyn626/acsense.git
+cd acsense
 
-# go the directory, and create an .env file
-touch .env
+# 2. Set up and activate the virtual environment
+python -m venv .venv
+& .\.venv\Scripts\Activate
 
-# get your Github Personal Access Token (PAT),
-# open the .env file and assign your PAT with this variable name.
-# note: dont enclose the PAT with qoutations ("")  
-GITHUB_TOKEN=...
+# 3. Install required dependencies
+pip install -r requirements.txt
 
-# double click on the `run.bat` file, or alternatively you can run it in the terminal with
+# 4. Prompt for your GitHub token and automatically write it to the .env file
+$token = Read-Host "Paste your GitHub Personal Access Token (PAT) here (No quotes needed)"
+"GITHUB_TOKEN=$token" | Out-File -FilePath .env -Encoding utf8
+
+# 5. Launch the application, double click on the run.bat file or run:
 .\run.bat
-
 ````
 load the browser extension,
 go to `chrome://extensions` on your browser
@@ -37,7 +41,6 @@ go to `chrome://extensions` on your browser
 -  psutil
 -  requests
 -  pywin32
--  WMI
 -  python-dotenv
 -  Flask
 -  flask-cors
