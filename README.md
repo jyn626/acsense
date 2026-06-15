@@ -11,7 +11,7 @@ detects your current activity (coding, browsing, youtube.) and keeps your github
 -  Detecs if there are no IDE opened by checking list of processes, if there are none then display the others respectively by priority.
 
 ## Usage
-<small>Powershell</small>
+<small>Windows Powershell</small>
 ````
 # 1. Clone the repository and move into the correct directory
 git clone https://github.com/jyn626/acsense.git
