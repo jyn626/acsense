@@ -1,7 +1,7 @@
 > [!NOTE]
 > Developed as a learning project. Some features may be incomplete or subject to change.
 
-# acsense
+# Acsense
 detects your current activity (coding, browsing, youtube.) and keeps your github status in sync automatically.
 
 ## Features as of now
